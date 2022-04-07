@@ -35,7 +35,7 @@ const formValidation = function(){
     }
 
     this.roleValidation = (input) => {
-        const inputValue = input.trim().lowerCase();
+        const inputValue = input.trim().toLowerCase();
         const roles = ['admin', 'employee', 'help_desk'];
 
         const roleValRes = roles.filter((role) => {

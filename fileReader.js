@@ -2,7 +2,7 @@ const fs = require('fs');
 const csv = require('csv-parser');
 const pool = require('./dbCon');
 const format = require('pg-format');
-const format = require('./formDa');
+const { formValidation } = require('./formDataValidation');
 
 let table = [];
 
@@ -32,18 +32,37 @@ let table = [];
 
 fs.createReadStream('biostats.csv').pipe(csv()).on('data', (row) => {
     const { Username,Surname, Email, Role} = row;
-    console.log(Username);
-    // const rowData = Object.values(row);
+    const validator = new formValidation();
+    const checkEmpty = !validator.checkEmpty(Username) || !validator.checkEmpty(Surname) || !validator.checkEmpty(Email) || !validator.checkEmpty(Role);
 
-    // if(rowData.length > 0){
-    //     table.push(rowData.map((data) => {
-    //         return data.replace(/"/g, "").trim();
-    //     }))
-    // }
+    if(checkEmpty || !validator.emailValidation(Email) || !validator.roleValidation(Role)){
+        if(checkEmpty){
+            return res.status(400).json({
+                message: "All fields need to be filled"
+            })
+            }else if(!validator.emailValidation(Email)){
+                return res.status(400).json({
+                    message: "Invalid email"
+                })
+            }else if(!validator.roleValidation(Role)){
+                return res.status(400).json({
+                    message: 'Invalid role'
+            })
+        }
+    }else{
+        const rowData = Object.values(row);
+
+        if(rowData.length > 0){
+            table.push(rowData.map((data) => {
+                return data.replace(/"/g, "").trim();
+            }))
+        }
+    }
+
     
 }).on('end', () => {
-    //console.log(table);
-
+    console.log(table);
+    
     // pool.query(format('INSERT INTO csv_content (name, sex, age, height, weight) VALUES %L RETURNING *', table), [], (err, res) => {
     //     if (err) {
     //         return console.log(err);
