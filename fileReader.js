@@ -29,7 +29,7 @@ let table = [];
 //     })
     
 // })
-
+let error;
 fs.createReadStream('biostats.csv').pipe(csv()).on('data', (row) => {
     const { Username,Surname, Email, Role} = row;
     const validator = new formValidation();
@@ -37,17 +37,23 @@ fs.createReadStream('biostats.csv').pipe(csv()).on('data', (row) => {
 
     if(checkEmpty || !validator.emailValidation(Email) || !validator.roleValidation(Role)){
         if(checkEmpty){
-            return res.status(400).json({
-                message: "All fields need to be filled"
-            })
+            // return res.status(400).json({
+            //     message: "All fields need to be filled"
+            // })
+            error = true;
+            return error;
             }else if(!validator.emailValidation(Email)){
-                return res.status(400).json({
-                    message: "Invalid email"
-                })
+                // return res.status(400).json({
+                //     message: "Invalid email"
+                // })
+            error = true;
+            return error;
             }else if(!validator.roleValidation(Role)){
-                return res.status(400).json({
-                    message: 'Invalid role'
-            })
+            //     return res.status(400).json({
+            //         message: 'Invalid role'
+            // })
+            error = true;
+            return error;
         }
     }else{
         const rowData = Object.values(row);
@@ -59,9 +65,13 @@ fs.createReadStream('biostats.csv').pipe(csv()).on('data', (row) => {
         }
     }
 
-    
 }).on('end', () => {
-    console.log(table);
+    if(!error){
+        console.log(table);
+    }else{
+        console.log('error')
+        return error;
+    }
     
     // pool.query(format('INSERT INTO csv_content (name, sex, age, height, weight) VALUES %L RETURNING *', table), [], (err, res) => {
     //     if (err) {
