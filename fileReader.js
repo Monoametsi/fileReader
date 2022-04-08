@@ -99,14 +99,14 @@ fs.createReadStream('biostats.csv').pipe(csv()).on('data', async (row) => {
 
         console.log(userTable);
 
-        // pool.query(format('INSERT INTO users( username, surname, email, passwrd, role_id ) VALUES %L RETURNING *', table), [], (err, res) => {
-        //     if (err) {
-        //         return console.log(err);
-        //     } else {
-        //         return console.log(res.rows);
-        //     }
-        // })
-        // return console.log('Proccessing Successful');
+        pool.query(format('INSERT INTO users( username, surname, email, role_id ) VALUES %L RETURNING *', userTable), [], (err, res) => {
+            if (err) {
+                return console.log(err);
+            } else {
+                return console.log(res.rows)
+            }
+        })
+        
     }else{
         console.log(error)
         return error;
