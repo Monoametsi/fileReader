@@ -2,7 +2,7 @@ const Pool = require('pg').Pool;
 
 const devConfig = {
     user: 'postgres',
-    password: 'Letsdoit!',
+    password: '1234',
     host: 'localhost',
     port: '5432',
     database: 'ontime'

@@ -37,7 +37,12 @@ const findRoleId = async () => {
     return getRoleId.rows;;
 }
 
-fs.createReadStream('biostats.csv').pipe(csv()).on('data', async (row) => {
+const getAllEmails = async () => {
+    const getEmail = await pool.query(`SELECT email FROM users`);
+    return getEmail.rows;
+}
+
+fs.createReadStream('biostats.csv').pipe(csv()).on('data', (row) => {
     let { Username,Surname, Email, Role} = row;
     const validator = new formValidation();
     const checkEmpty = !validator.checkEmpty(Username) || !validator.checkEmpty(Surname) || !validator.checkEmpty(Email) || !validator.checkEmpty(Role);
@@ -64,53 +69,76 @@ fs.createReadStream('biostats.csv').pipe(csv()).on('data', async (row) => {
         }
     }else{
         
-        // row.Role = await findRoleId(Role);
-        // const rowData = Object.values(row);
-        // console.log(rowData);
         table.push(row);
-
-        // if(rowData.length > 0){
-        //     table.push(rowData.map((data) => {
-        //         if(isNaN(data)){
-        //             data.replace(/"/g, "").trim();
-        //         }
-                
-        //         return data;
-        //     }))
-        // }
     }
 
 }).on('end', async () => {
     if(!error){
-        const roles = await findRoleId();
-        table = table.map((row) => {
-            let { Username,Surname, Email, Role} = row;
+
+    try{
+        const userEmails = await getAllEmails();
+        let emailExists;
+
+        table.map((row) => {
+            let { Email } = row;
             
-            return roles.map((role) => {
-                
-                if(role.roles === Role){
-                    row.Role = role.role_id;
-                    const rowData = Object.values(row);
-                    userTable.push(rowData);
-                    return rowData;
+            userEmails.map((email) => {
+                if(email.email === Email){
+                    emailExists = true;
                 }
             })
         })
 
-        console.log(userTable);
+        if(emailExists){
+            console.log(`One or more of the email addresses within the file you provided
+            have already been registered`);
 
-        pool.query(format('INSERT INTO users( username, surname, email, role_id ) VALUES %L RETURNING *', userTable), [], (err, res) => {
-            if (err) {
-                return console.log(err);
-            } else {
-                return console.log(res.rows)
-            }
-        })
+            return `One or more of the email addresses within 
+            the file you provided have already been registered`
+
+            // return res.status(409).json({
+            //     message: `One or more of the email addresses within the file you provided
+            //     have already been registered`
+            // })
+        }else{
+        
+            const roles = await findRoleId();
+            table.map((row) => {
+                let { Role} = row;
+                
+                roles.map((role) => {
+                    if(role.roles === Role){
+                        row.Role = role.role_id;
+                        row.Username = row.Username.trim();
+                        row.Email = row.Email.trim();
+                        row.Surname = row.Surname.trim();
+                        const rowData = Object.values(row);
+                        userTable.push(rowData);
+                    }
+                })
+            })
+
+            console.log(userTable);
+
+            // pool.query(format('INSERT INTO users( username, surname, email, role_id ) VALUES %L RETURNING *', userTable), [], (err, res) => {
+            //     if (err) {
+            //         return console.log(err);
+            //     } else {
+            //         return console.log(res.rows);
+            //     }
+            // })
+        }
+    }catch(err){
+        console.log(err)
+        return err;
+        // res.status(503).json({
+        //     message: `Internal server error`,
+        //     error: err
+        // })
+    }
         
     }else{
         console.log(error)
         return error;
     }
-
-    //console.log('Proccessing Successful');
 })
