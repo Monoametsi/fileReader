@@ -3,37 +3,15 @@ const csv = require('csv-parser');
 const pool = require('./dbCon');
 const format = require('pg-format');
 const { formValidation } = require('./formDataValidation');
+const { emailSender } = require('./emailSender');
 
 let table = [];
 let userTable = [];
-
-// fs.readFile('./biostats.csv', 'utf8', async (err, data) => {
-//     table = data.split('\n');
-
-//     table = table.filter((row, i) => {
-//         return i > 0 && row.length > 0;
-//     })
-
-//     table = table.map((row) => {
-//         tableRowData = row.toString().split(',');
-//         return tableRowData.map((rowData) => {
-//             return rowData.replace(/"/g, "").trim();
-//         })
-//     })
-
-//     pool.query(format('INSERT INTO csv_content (name, sex, age, height, weight) VALUES %L RETURNING *', table), [], (err, res) => {
-//         if (err) {
-//             return console.log(err)
-//         } else {
-//             return console.log(res.rows);
-//         }
-//     })
-    
-// })
+let allUsersEmails = [];
 let error;
+
 const findRoleId = async () => {
     const getRoleId = await pool.query(`SELECT * FROM roles`);
-    //const { role_id } = getRoleId.rows[0];
     return getRoleId.rows;;
 }
 
@@ -68,11 +46,10 @@ fs.createReadStream('biostats.csv').pipe(csv()).on('data', (row) => {
             return error;
         }
     }else{
-        
         table.push(row);
     }
 
-}).on('end', async () => {
+}).on('close', async () => {
     if(!error){
 
     try{
@@ -101,32 +78,36 @@ fs.createReadStream('biostats.csv').pipe(csv()).on('data', (row) => {
             //     have already been registered`
             // })
         }else{
-        
+            
             const roles = await findRoleId();
             table.map((row) => {
-                let { Role} = row;
+                let { Role } = row;
                 
                 roles.map((role) => {
-                    if(role.roles === Role){
+                    if(role.roles === Role.trim()){
                         row.Role = role.role_id;
                         row.Username = row.Username.trim();
                         row.Email = row.Email.trim();
                         row.Surname = row.Surname.trim();
                         const rowData = Object.values(row);
+                        allUsersEmails.push(row.Email);
                         userTable.push(rowData);
                     }
                 })
             })
 
-            console.log(userTable);
-
-            // pool.query(format('INSERT INTO users( username, surname, email, role_id ) VALUES %L RETURNING *', userTable), [], (err, res) => {
-            //     if (err) {
-            //         return console.log(err);
-            //     } else {
-            //         return console.log(res.rows);
-            //     }
-            // })
+            pool.query(format('INSERT INTO users( username, surname, email, role_id ) VALUES %L RETURNING *', userTable), [], async (err, res) => {
+                if (err) {
+                    return console.log(err);
+                } else {
+                    try{
+                        return await emailSender(allUsersEmails);
+                    }catch(err){
+                        console.log(err);
+                        return err;
+                    }
+                }
+            })
         }
     }catch(err){
         console.log(err)
