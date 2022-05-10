@@ -1,0 +1,19 @@
+// class lessThan15CharTotal extends ReadFile{
+//   this.lessThan15CharTotal++;
+// }
+
+// class moverMentionsTotal extends ReadFile{
+//  this.moverMentionsTotal++;
+// }
+
+// class shakerMentionsTotal extends ReadFile{
+// this.shakerMentionsTotal++;
+// }
+
+// class questions extends ReadFile{
+// this.questions++;
+// }
+
+// class spam extends ReadFile{
+// this.spam++;
+// }
